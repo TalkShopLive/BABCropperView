@@ -321,7 +321,6 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
             }
         }
         
-        //self.scrollView.maximumZoomScale = BABCropperViewMaximumZoomScale;
         self.scrollView.maximumZoomScale = self.maximumZoomScale;
         self.scrollView.zoomScale = self.startZoomedToFill ? startingZoomScale : self.scrollView.minimumZoomScale;
     }
