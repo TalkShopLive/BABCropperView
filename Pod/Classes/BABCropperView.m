@@ -171,6 +171,7 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     self.operationQueue = [[NSOperationQueue alloc] init];
     self.cropDisplayScale = 1.0f;
     self.cropDisplayOffset = UIOffsetZero;
+    self.maximumZoomScale = BABCropperViewMaximumZoomScale;
     
     self.backgroundColor = [UIColor blackColor];
     
@@ -226,6 +227,13 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     
     _cropsImageToCircle = cropsImageToCircle;
     
+    [self setNeedsLayout];
+}
+
+- (void) setMaximumZoomScale:(CGFloat)maximumZoomScale {
+
+    _maximumZoomScale = maximumZoomScale;
+
     [self setNeedsLayout];
 }
 
@@ -313,7 +321,8 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
             }
         }
         
-        self.scrollView.maximumZoomScale = BABCropperViewMaximumZoomScale;
+        //self.scrollView.maximumZoomScale = BABCropperViewMaximumZoomScale;
+        self.scrollView.maximumZoomScale = self.maximumZoomScale;
         self.scrollView.zoomScale = self.startZoomedToFill ? startingZoomScale : self.scrollView.minimumZoomScale;
     }
 }

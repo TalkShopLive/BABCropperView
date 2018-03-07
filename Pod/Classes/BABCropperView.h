@@ -23,6 +23,7 @@
 @property (nonatomic, assign) BOOL leavesUnfilledRegionsTransparent; // defaults to NO
 @property (nonatomic, assign) BOOL allowsNegativeSpaceInCroppedImage; //defaults to NO
 @property (nonatomic, assign) BOOL startZoomedToFill; // defaults to NO
+@property (nonatomic, assign) CGFloat maximumZoomScale; // defaults to 4
 
 - (void)renderCroppedImage:(void (^)(UIImage *croppedImage, CGRect cropRect))completionBlock;
 
