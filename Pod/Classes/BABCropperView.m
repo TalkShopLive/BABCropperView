@@ -61,17 +61,19 @@ static CGSize BABFlipedSize(CGSize size) {
     return CGSizeMake(size.height, size.width);
 }
 
-static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, CGRect cropRect, CGSize scaleSize, BOOL cropToCircle, BOOL transparent) {
+static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, CGRect cropRect, CGSize scaleSize, CGFloat oversize, BOOL cropToCircle, BOOL transparent) {
     
     CGSize imageSize = image.size;
     CGColorSpaceRef colorspace = CGColorSpaceCreateDeviceRGB();
     CGFloat scale = 1.0f;
-    
+
+    CGSize targetSize = CGSizeMake((int)MIN(MAX(cropRect.size.width, scaleSize.width), scaleSize.width * oversize), (int)MIN(MAX(cropRect.size.height, scaleSize.height), scaleSize.height * oversize));
+
     if(cropRect.size.width > cropRect.size.height) {
-        scale = scaleSize.width/cropRect.size.width;
+        scale = targetSize.width/cropRect.size.width;
     }
     else {
-        scale = scaleSize.height/cropRect.size.height;
+        scale = targetSize.height/cropRect.size.height;
     }
     
     CGRect drawRect = CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height);
@@ -84,12 +86,12 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
         case UIImageOrientationLeft:
             rectTransform = CGAffineTransformTranslate(CGAffineTransformMakeRotation(M_PI_2), 0, -drawRect.size.height);
             shift = CGPointMake(imageSize.height - shift.y - cropRect.size.width, imageSize.width - shift.x - cropRect.size.height);
-            scaleSize = BABFlipedSize(scaleSize);
+            targetSize = BABFlipedSize(targetSize);
             break;
         case UIImageOrientationRight:
             rectTransform = CGAffineTransformTranslate(CGAffineTransformMakeRotation(-M_PI_2), -drawRect.size.width, 0);
             shift = CGPointMake(shift.y, shift.x);
-            scaleSize = BABFlipedSize(scaleSize);
+            targetSize = BABFlipedSize(targetSize);
             break;
         case UIImageOrientationUp:
             rectTransform = CGAffineTransformIdentity;
@@ -105,11 +107,11 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     };
     drawRect = CGRectApplyAffineTransform(drawRect, rectTransform);
     drawRect = CGRectApplyAffineTransform(drawRect, CGAffineTransformMakeTranslation(-shift.x * scale, -shift.y * scale));
-    
-    CGContextRef bitmap = CGBitmapContextCreate(NULL, scaleSize.width, scaleSize.height, 8, scaleSize.width * 4, colorspace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+
+    CGContextRef bitmap = CGBitmapContextCreate(NULL, targetSize.width, targetSize.height, 8, targetSize.width * 4, colorspace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     
     if(cropToCircle) {
-        CGContextAddEllipseInRect(bitmap, CGRectMake(0.0f, 0.0f, scaleSize.width, scaleSize.height));
+        CGContextAddEllipseInRect(bitmap, CGRectMake(0.0f, 0.0f, targetSize.width, targetSize.height));
         CGContextClip(bitmap);
     }
     
@@ -171,7 +173,7 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     self.operationQueue = [[NSOperationQueue alloc] init];
     self.cropDisplayScale = 1.0f;
     self.cropDisplayOffset = UIOffsetZero;
-    self.maximumZoomScale = BABCropperViewMaximumZoomScale;
+    self.maximumImageUpscale = 0.0;
     
     self.backgroundColor = [UIColor blackColor];
     
@@ -230,9 +232,9 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     [self setNeedsLayout];
 }
 
-- (void) setMaximumZoomScale:(CGFloat)maximumZoomScale {
+- (void) setMaximumImageUpscale:(CGFloat)maximumUpscale {
 
-    _maximumZoomScale = maximumZoomScale;
+    _maximumImageUpscale = maximumUpscale;
 
     [self setNeedsLayout];
 }
@@ -320,8 +322,8 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
                 startingZoomScale = minimumZoomScaleBasedOnHeight;
             }
         }
-        
-        self.scrollView.maximumZoomScale = self.maximumZoomScale;
+
+        self.scrollView.maximumZoomScale = self.maximumImageUpscale == 0 ? BABCropperViewMaximumZoomScale : self.maximumImageUpscale * (self.displayCropSize.width / self.cropSize.width);
         self.scrollView.zoomScale = self.startZoomedToFill ? startingZoomScale : self.scrollView.minimumZoomScale;
     }
 }
@@ -386,7 +388,7 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     
     [self.operationQueue addOperationWithBlock:^{
         
-        UIImage *croppedImage = BABCropperViewCroppedAndScaledImageWithCropRect(image, cropRect, cropSize, cropToCircle, leavesUnfilledRegionsTransparent);
+        UIImage *croppedImage = BABCropperViewCroppedAndScaledImageWithCropRect(image, cropRect, cropSize, self.maximumCropOversize, cropToCircle, leavesUnfilledRegionsTransparent);
         
         dispatch_async(dispatch_get_main_queue(), ^{
             
