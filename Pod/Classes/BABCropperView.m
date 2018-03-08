@@ -78,28 +78,34 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     
     CGRect drawRect = CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height);
     drawRect = CGRectApplyAffineTransform(drawRect, CGAffineTransformMakeScale(scale, scale));
-    
+
     CGAffineTransform rectTransform;
     CGPoint shift = CGPointMake(cropRect.origin.x, cropRect.origin.y);
     switch (image.imageOrientation)
     {
         case UIImageOrientationLeft:
+            //bad (button up) - quite sucks
             rectTransform = CGAffineTransformTranslate(CGAffineTransformMakeRotation(M_PI_2), 0, -drawRect.size.height);
-            shift = CGPointMake(imageSize.height - shift.y - cropRect.size.width, imageSize.width - shift.x - cropRect.size.height);
+            //shift = CGPointMake(imageSize.height - shift.y - cropRect.size.width, imageSize.width - shift.x - cropRect.size.height);
+            shift = CGPointMake(imageSize.height - shift.y - cropRect.size.height, imageSize.width - shift.x - cropRect.size.width);
             targetSize = BABFlipedSize(targetSize);
             break;
         case UIImageOrientationRight:
+            //ok (button down)
             rectTransform = CGAffineTransformTranslate(CGAffineTransformMakeRotation(-M_PI_2), -drawRect.size.width, 0);
             shift = CGPointMake(shift.y, shift.x);
             targetSize = BABFlipedSize(targetSize);
             break;
         case UIImageOrientationUp:
+            //ok (button right)
             rectTransform = CGAffineTransformIdentity;
             shift = CGPointMake(shift.x, imageSize.height - shift.y - cropRect.size.height);
             break;
         case UIImageOrientationDown:
+            //bad (button left) (just shifted to the right)
             rectTransform = CGAffineTransformTranslate(CGAffineTransformMakeRotation(-M_PI), -drawRect.size.width, -drawRect.size.height);
-            shift = CGPointMake(imageSize.width - shift.x - cropRect.size.height, shift.y);
+            //shift = CGPointMake(imageSize.width - shift.x - cropRect.size.height, shift.y);
+            shift = CGPointMake(imageSize.width - shift.x - cropRect.size.width, shift.y);
             break;
         default:
             rectTransform = CGAffineTransformIdentity;
@@ -120,7 +126,7 @@ static UIImage* BABCropperViewCroppedAndScaledImageWithCropRect(UIImage *image, 
     if(!transparent) {
         CGContextFillRect(bitmap, CGRectMake(0.0f, 0.0f, cropRect.size.width, cropRect.size.height));
     }
-    
+
     CGContextDrawImage(bitmap, drawRect, image.CGImage);
     CGImageRef newImageRef = CGBitmapContextCreateImage(bitmap);
     UIImage *newImage = [UIImage imageWithCGImage:newImageRef scale:1.0f orientation:image.imageOrientation];
